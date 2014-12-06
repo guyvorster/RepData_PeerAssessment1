@@ -1,14 +1,9 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 
 ## Loading and preprocessing the data
-```{r}
 
+```r
         data <- read.csv("activity.csv", header=T)
 
         #data$date <- as.POSIXct(data$date)
@@ -22,12 +17,12 @@ output:
 
         #convert typeofday to a factor variable
         data$typeofday <-as.factor(data$typeofday)
-
 ```
 
 
 ## Mean and Median Steps Per Day
-```{r}
+
+```r
         #load the dplyr package in oder to use group_by function
         if (!require(dplyr)) 
         {
@@ -35,7 +30,30 @@ output:
                 library(dplyr)
                 require(dplyr)
         }
-       
+```
+
+```
+## Loading required package: dplyr
+```
+
+```
+## Warning: package 'dplyr' was built under R version 3.1.2
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+## 
+## The following object is masked from 'package:stats':
+## 
+##     filter
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
         #use only the non NA values in this calculation
         #group by date and count the total number of steps per day
         date.based.summary <- data[complete.cases(data),]%>%
@@ -44,19 +62,21 @@ output:
 
         #create a histogram
         hist (date.based.summary$totalsteps, main="Total Steps", xlab="Total Steps", col="blue")
-
-
-        meansteps <- as.character(round(mean(date.based.summary$totalsteps), digits=0))
-        mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=0))
-
-
 ```
 
-* The average number of steps taken per day were `r meansteps` and the median number of steps were `r mediansteps`
+![](./PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+
+```r
+        meansteps <- as.character(round(mean(date.based.summary$totalsteps), digits=0))
+        mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=0))
+```
+
+* The average number of steps taken per day were 10766 and the median number of steps were 10765
 
 
 ## Daily Activity Patterns
-```{r}
+
+```r
         # Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the
         #average number of steps taken, averaged across all days (y-axis)
 
@@ -66,38 +86,40 @@ output:
 
         plot(interval.based.summary$interval, interval.based.summary$meansteps, type = "l", 
         main = "Average Steps per Time Period", xlab = "Time Period", ylab = "Average Steps")
+```
 
+![](./PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
 
+```r
         # Which 5-minute interval, on average across all the days in the dataset, contains the                
         #maximum number of steps?
 
         most.active.time <- as.character(subset(interval.based.summary, meansteps==max(meansteps), 
         select=c("interval")))
-
 ```
 
-* The most active time period of the day is period `r most.active.time`
+* The most active time period of the day is period 835
 
 
 ## Imputing Missing Values
 
-```{r}
 
+```r
 #Calculate and report the total number of missing values in the dataset 
 #(i.e. the total number of rows with NAs)
 
 missing.steps <- sum(is.na(data$steps))
 missing.date <- sum(is.na(data$date))
 missing.interval <- sum(is.na(data$interval))
-
 ```
 
-* There are `r missing.steps` observations with missing steps
-* There are `r missing.date` observations with missing dates
-* There are `r missing.interval` observations with missing intervals
+* There are 2304 observations with missing steps
+* There are 0 observations with missing dates
+* There are 0 observations with missing intervals
 
 
-```{r}
+
+```r
 #Devise a strategy for filling in all of the missing values in the dataset. 
 #The strategy does not need to be sophisticated. For example, you could use 
 #the mean/median for that day, or the mean for that 5-minute interval, etc.
@@ -125,23 +147,33 @@ date.based.summary <- newdata%>%
                         summarise(totalsteps=sum(steps))
 
 hist (date.based.summary$totalsteps, main="Total Steps", xlab="Total Steps", col="blue")
+```
 
+![](./PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+
+```r
 meansteps <- as.character(round(mean(date.based.summary$totalsteps), digits=0))
 mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=0))
-
-
 ```
 
 
 
-* The average number of steps taken per day **(after imputing missing data)** were `r meansteps` and the median number of steps were `r mediansteps`
+* The average number of steps taken per day **(after imputing missing data)** were 10766 and the median number of steps were 10762
 
 
 
 ## Weekday vs Weekend Activity Patterns
 
-```{r}
+
+```r
 library(tidyr)
+```
+
+```
+## Warning: package 'tidyr' was built under R version 3.1.2
+```
+
+```r
 #library (lattice)
 
        by_interval_and_type <- group_by (newdata, 
@@ -160,14 +192,13 @@ library(tidyr)
         
         weekday.vs.weekend.summary$interval <- as.numeric(weekday.vs.weekend.summary$interval)
 
-
-        weekdaymean <- round(mean(subset(weekday.vs.weekend.summary, 
+        weekdaymean <- mean(subset(weekday.vs.weekend.summary, 
                                    typeofday=="Weekday", 
-                                   select=c("meansteps"))$meansteps), digits=0)
+                                   select=c("meansteps"))$meansteps)
 
-        weekendmean <- round(mean(subset(weekday.vs.weekend.summary, 
+        weekendmean <- mean(subset(weekday.vs.weekend.summary, 
                                    typeofday=="Weekend", 
-                                   select=c("meansteps"))$meansteps), digits=0)
+                                   select=c("meansteps"))$meansteps)
 
         #creating a little data frame with the x & y co-ords for each plot.
         #in order to get ggplot to understand which facet to put the text on,
@@ -181,7 +212,13 @@ library(tidyr)
                         typeofday=c("Weekday","Weekend"))
 
         library(ggplot2)
-   
+```
+
+```
+## Warning: package 'ggplot2' was built under R version 3.1.2
+```
+
+```r
         p <- ggplot(weekday.vs.weekend.summary, aes(x=interval, y=meansteps))
         p <- p + geom_line(color="firebrick")
         p <- p + labs (title="Weekday vs Weekend Comparison")
@@ -193,11 +230,10 @@ library(tidyr)
                            color = "grey50", size=4) 
 
         print (p)
-
-
-
 ```
 
-* The average number of steps taken per time period during the week were `r weekdaymean` and the average number of steps taken per time period on the weekend were `r weekendmean`
+![](./PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+
+* The average number of steps taken per time period during the week were 35.608642 and the average number of steps taken per time period on the weekend were 42.3645833
 
 

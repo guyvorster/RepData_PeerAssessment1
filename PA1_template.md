@@ -1,10 +1,21 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-## Reproducible Research - Peer Assessment 1  
+# Reproducible Research - Peer Assessment 1  
+
+This assignment makes use of data from a personal activity monitoring device (activity.csv). This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.  
+
+A number of questions are answered as part of this report, including:
+* what are the mean and median steps per day.
+* what are the daily activity patterns.
+* How should we impute missing information so as to have a complete dataset.
+* What are the differences between weekday activity and weekend activity patterns.  
+
+
+The activity data consists of 17,568 observations over the following 3 features:
+* steps (numeric indicating the number of steps taken)
+* date (date indicating the date of the measurement)
+* interval (numeric indicating the 5 minute time period during which the measurement was taken)  
+
+
+
 
 
 

@@ -1,7 +1,14 @@
-# Reproducible Research: Peer Assessment 1
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+## Reproducible Research - Peer Assessment 1  
 
 
-## Loading and preprocessing the data
+
+## Loading and Preprocessing the Data  
 
 ```r
         data <- read.csv("activity.csv", header=T)
@@ -20,38 +27,7 @@
 ```
 
 
-## Mean and Median Steps Per Day
-
-```r
-        #load the dplyr package in oder to use group_by function
-        if (!require(dplyr)) 
-        {
-                install.packages("dplyr")
-                library(dplyr)
-                require(dplyr)
-        }
-```
-
-```
-## Loading required package: dplyr
-```
-
-```
-## Warning: package 'dplyr' was built under R version 3.1.2
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-## 
-## The following object is masked from 'package:stats':
-## 
-##     filter
-## 
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
+## Mean and Median Steps Per Day  
 
 ```r
         #use only the non NA values in this calculation
@@ -64,7 +40,7 @@
         hist (date.based.summary$totalsteps, main="Total Steps", xlab="Total Steps", col="blue")
 ```
 
-![](./PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
 
 ```r
         meansteps <- as.character(round(mean(date.based.summary$totalsteps), digits=0))
@@ -74,7 +50,7 @@
 * The average number of steps taken per day were 10766 and the median number of steps were 10765
 
 
-## Daily Activity Patterns
+## Daily Activity Patterns  
 
 ```r
         # Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the
@@ -88,7 +64,7 @@
         main = "Average Steps per Time Period", xlab = "Time Period", ylab = "Average Steps")
 ```
 
-![](./PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
 
 ```r
         # Which 5-minute interval, on average across all the days in the dataset, contains the                
@@ -98,10 +74,10 @@
         select=c("interval")))
 ```
 
-* The most active time period of the day is period 835
+* The most active time period of the day is period 835  
 
 
-## Imputing Missing Values
+## Imputing Missing Values  
 
 
 ```r
@@ -149,7 +125,7 @@ date.based.summary <- newdata%>%
 hist (date.based.summary$totalsteps, main="Total Steps", xlab="Total Steps", col="blue")
 ```
 
-![](./PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png) 
 
 ```r
 meansteps <- as.character(round(mean(date.based.summary$totalsteps), digits=0))
@@ -157,34 +133,26 @@ mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=
 ```
 
 
-
-* The average number of steps taken per day **(after imputing missing data)** were 10766 and the median number of steps were 10762
-
+* The average number of steps taken per day **(after imputing missing data)** were 10766 and the median number of steps were 10762  
 
 
-## Weekday vs Weekend Activity Patterns
 
 
-```r
-library(tidyr)
-```
+## Weekday vs Weekend Activity Patterns  
 
-```
-## Warning: package 'tidyr' was built under R version 3.1.2
-```
 
 ```r
-#library (lattice)
-
-       by_interval_and_type <- group_by (newdata, 
+       #group by interval and type of day for summarization at that level
+        by_interval_and_type <- group_by (newdata, 
                                          combo = paste(interval, typeofday, sep= "~"))
         
-        #sum the emissions by year
+        #calculate the mean by interval and type
         weekday.vs.weekend.summary <- summarize(by_interval_and_type, mean(steps))
       
-        #call the separate function to create a "year" column and "type" column
+        #call the separate function to create a "year" column and "typeofday" column
         weekday.vs.weekend.summary <- separate(data=weekday.vs.weekend.summary, 
-                                               col=combo, into=c("interval", "typeofday"), sep= "~")
+                                               col=combo, into=c("interval", "typeofday"), 
+                                               sep= "~")
 
         weekday.vs.weekend.summary$typeofday <- as.factor(weekday.vs.weekend.summary$typeofday)
 
@@ -192,39 +160,37 @@ library(tidyr)
         
         weekday.vs.weekend.summary$interval <- as.numeric(weekday.vs.weekend.summary$interval)
 
-        weekdaymean <- mean(subset(weekday.vs.weekend.summary, 
+        weekdaymean <- round(mean(subset(weekday.vs.weekend.summary, 
                                    typeofday=="Weekday", 
-                                   select=c("meansteps"))$meansteps)
+                                   select=c("meansteps"))$meansteps), digits=0)
 
-        weekendmean <- mean(subset(weekday.vs.weekend.summary, 
+        weekendmean <- round(mean(subset(weekday.vs.weekend.summary, 
                                    typeofday=="Weekend", 
-                                   select=c("meansteps"))$meansteps)
+                                   select=c("meansteps"))$meansteps), digits=0)
 
-        #creating a little data frame with the x & y co-ords for each plot.
+        #this next piece is not required per the instructions but i wanted to show
+        #some different annotation on the plots by facet to include the average
+        #steps by time period for each facet.
+        #i had to create a little data frame with the x & y co-ords for each plot.
         #in order to get ggplot to understand which facet to put the text on,
         #i needed to include the typeofday feature which is what is used for the facet
         # thanks to TRinkers R blog for pointing me in the right direction because it had 
         #me stumped.  
         #https://trinkerrstuff.wordpress.com/2012/09/01/add-text-annotations-to-ggplot2-faceted-plot/
         
-        annotation.text.info <- data.frame(x=c(120,120), y=c(weekdaymean+5, weekendmean+5), 
-                        label=c("Mean", "Mean"), 
-                        typeofday=c("Weekday","Weekend"))
+        annotation.text.info <- data.frame(x=c(180,180), y=c(weekdaymean+8, weekendmean+8), 
+                        label=c(paste("Mean Per Period:", weekdaymean),
+                                paste("Mean Per Period:",weekendmean)), 
+                                typeofday=c("Weekday","Weekend"))
 
-        library(ggplot2)
-```
-
-```
-## Warning: package 'ggplot2' was built under R version 3.1.2
-```
-
-```r
+     
+   
         p <- ggplot(weekday.vs.weekend.summary, aes(x=interval, y=meansteps))
         p <- p + geom_line(color="firebrick")
-        p <- p + labs (title="Weekday vs Weekend Comparison")
+        p <- p + labs (title="Weekday vs Weekend Activity Comparison")
         p <- p + labs (x="Time Interval")
         p <- p + labs (y="Average Steps")
-        p <- p + facet_wrap(~typeofday, ncol=2)
+        p <- p + facet_wrap(~typeofday, ncol=1)
         p <- p + geom_line(stat = "hline", yintercept = "mean", color='blue', linetype=2)
         p <- p + geom_text(aes(x, y, label=label, group=NULL), data=annotation.text.info, 
                            color = "grey50", size=4) 
@@ -232,8 +198,11 @@ library(tidyr)
         print (p)
 ```
 
-![](./PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
 
-* The average number of steps taken per time period during the week were 35.608642 and the average number of steps taken per time period on the weekend were 42.3645833
+* The average number of steps taken per 5 minute time period during the week were 36 and the average number of steps taken per 5 minute time period on the weekend were 42
+* The weekday pattern exhibits a big spike early in the morning (could be walking to work or gym) and then very moderate activity during the day.
+* The weekend pattern also exhibits a bigger spike early in the morning but then a much higher rate of activity on average compared to the weekday activity.  
 
 
+- Thanks to [TRinkers R blog](https://trinkerrstuff.wordpress.com/2012/09/01/add-text-annotations-to-ggplot2-faceted-plot/) for providing the guidance I needed to figure out how to put different text annotations on different locations when doing faceted plots.

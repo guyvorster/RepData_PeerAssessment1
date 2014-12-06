@@ -4,9 +4,39 @@ output:
   html_document:
     keep_md: true
 ---
+## Reproducible Research - Peer Assessment 1  
+```{r echo=FALSE, results='hide'}
+        #tried to hide the load messages from showing up in the generated code
+        #but could not so this will show no matter what
+        #load the dplyr package in oder to use group_by function
+        if (!require(dplyr)) 
+        {
+                install.packages("dplyr")
+                library(dplyr)
+                require(dplyr)
+        }
 
 
-## Loading and preprocessing the data
+        #load the ggplot2 package for plotting
+        if (!require(ggplot2)) 
+        {
+                install.packages("ggplot2")
+                library(ggplot2)
+                require(ggplot2)
+        }
+        
+        #load the tidyr package for doing some cleaning of data
+        if (!require(tidyr)) 
+        {
+                install.packages("tidyr")
+                library(tidyr)
+                require(tidyr)
+        }
+
+```
+
+
+## Loading and Preprocessing the Data  
 ```{r}
 
         data <- read.csv("activity.csv", header=T)
@@ -26,15 +56,8 @@ output:
 ```
 
 
-## Mean and Median Steps Per Day
+## Mean and Median Steps Per Day  
 ```{r}
-        #load the dplyr package in oder to use group_by function
-        if (!require(dplyr)) 
-        {
-                install.packages("dplyr")
-                library(dplyr)
-                require(dplyr)
-        }
        
         #use only the non NA values in this calculation
         #group by date and count the total number of steps per day
@@ -55,7 +78,7 @@ output:
 * The average number of steps taken per day were `r meansteps` and the median number of steps were `r mediansteps`
 
 
-## Daily Activity Patterns
+## Daily Activity Patterns  
 ```{r}
         # Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the
         #average number of steps taken, averaged across all days (y-axis)
@@ -76,10 +99,10 @@ output:
 
 ```
 
-* The most active time period of the day is period `r most.active.time`
+* The most active time period of the day is period `r most.active.time`  
 
 
-## Imputing Missing Values
+## Imputing Missing Values  
 
 ```{r}
 
@@ -133,26 +156,25 @@ mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=
 ```
 
 
-
-* The average number of steps taken per day **(after imputing missing data)** were `r meansteps` and the median number of steps were `r mediansteps`
-
+* The average number of steps taken per day **(after imputing missing data)** were `r meansteps` and the median number of steps were `r mediansteps`  
 
 
-## Weekday vs Weekend Activity Patterns
+
+
+## Weekday vs Weekend Activity Patterns  
 
 ```{r}
-library(tidyr)
-#library (lattice)
-
-       by_interval_and_type <- group_by (newdata, 
+       #group by interval and type of day for summarization at that level
+        by_interval_and_type <- group_by (newdata, 
                                          combo = paste(interval, typeofday, sep= "~"))
         
-        #sum the emissions by year
+        #calculate the mean by interval and type
         weekday.vs.weekend.summary <- summarize(by_interval_and_type, mean(steps))
       
-        #call the separate function to create a "year" column and "type" column
+        #call the separate function to create a "year" column and "typeofday" column
         weekday.vs.weekend.summary <- separate(data=weekday.vs.weekend.summary, 
-                                               col=combo, into=c("interval", "typeofday"), sep= "~")
+                                               col=combo, into=c("interval", "typeofday"), 
+                                               sep= "~")
 
         weekday.vs.weekend.summary$typeofday <- as.factor(weekday.vs.weekend.summary$typeofday)
 
@@ -169,25 +191,29 @@ library(tidyr)
                                    typeofday=="Weekend", 
                                    select=c("meansteps"))$meansteps), digits=0)
 
-        #creating a little data frame with the x & y co-ords for each plot.
+        #this next piece is not required per the instructions but i wanted to show
+        #some different annotation on the plots by facet to include the average
+        #steps by time period for each facet.
+        #i had to create a little data frame with the x & y co-ords for each plot.
         #in order to get ggplot to understand which facet to put the text on,
         #i needed to include the typeofday feature which is what is used for the facet
         # thanks to TRinkers R blog for pointing me in the right direction because it had 
         #me stumped.  
         #https://trinkerrstuff.wordpress.com/2012/09/01/add-text-annotations-to-ggplot2-faceted-plot/
         
-        annotation.text.info <- data.frame(x=c(120,120), y=c(weekdaymean+5, weekendmean+5), 
-                        label=c("Mean", "Mean"), 
-                        typeofday=c("Weekday","Weekend"))
+        annotation.text.info <- data.frame(x=c(180,180), y=c(weekdaymean+8, weekendmean+8), 
+                        label=c(paste("Mean Per Period:", weekdaymean),
+                                paste("Mean Per Period:",weekendmean)), 
+                                typeofday=c("Weekday","Weekend"))
 
-        library(ggplot2)
+     
    
         p <- ggplot(weekday.vs.weekend.summary, aes(x=interval, y=meansteps))
         p <- p + geom_line(color="firebrick")
-        p <- p + labs (title="Weekday vs Weekend Comparison")
+        p <- p + labs (title="Weekday vs Weekend Activity Comparison")
         p <- p + labs (x="Time Interval")
         p <- p + labs (y="Average Steps")
-        p <- p + facet_wrap(~typeofday, ncol=2)
+        p <- p + facet_wrap(~typeofday, ncol=1)
         p <- p + geom_line(stat = "hline", yintercept = "mean", color='blue', linetype=2)
         p <- p + geom_text(aes(x, y, label=label, group=NULL), data=annotation.text.info, 
                            color = "grey50", size=4) 
@@ -198,6 +224,9 @@ library(tidyr)
 
 ```
 
-* The average number of steps taken per time period during the week were `r weekdaymean` and the average number of steps taken per time period on the weekend were `r weekendmean`
+* The average number of steps taken per 5 minute time period during the week were `r weekdaymean` and the average number of steps taken per 5 minute time period on the weekend were `r weekendmean`
+* The weekday pattern exhibits a big spike early in the morning (could be walking to work or gym) and then very moderate activity during the day.
+* The weekend pattern also exhibits a bigger spike early in the morning but then a much higher rate of activity on average compared to the weekday activity.  
 
 
+- Thanks to [TRinkers R blog](https://trinkerrstuff.wordpress.com/2012/09/01/add-text-annotations-to-ggplot2-faceted-plot/) for providing the guidance I needed to figure out how to put different text annotations on different locations when doing faceted plots.

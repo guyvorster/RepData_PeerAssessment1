@@ -1,18 +1,22 @@
 # Reproducible Research - Peer Assessment 1  
 
-This assignment makes use of data from a personal activity monitoring device (activity.csv). This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.  
+This assignment analyzes data from a personal activity monitoring device (from a file called activity.csv). This device collects data at 5 minute intervals throughout the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.  
 
-A number of questions are answered as part of this report, including:
+### A number of questions are answered as part of this report, including:
 * what are the mean and median steps per day.
 * what are the daily activity patterns.
 * How should we impute missing information so as to have a complete dataset.
 * What are the differences between weekday activity and weekend activity patterns.  
 
 
-The activity data consists of 17,568 observations over the following 3 features:
+### The activity data consists of 17,568 observations over the following 3 features:
 * steps (numeric indicating the number of steps taken)
 * date (date indicating the date of the measurement)
-* interval (numeric indicating the 5 minute time period during which the measurement was taken)  
+* interval (numeric indicating the 5 minute time period during which the measurement was taken)
+
+### Some additional features were added to the data to support the analysis:
+* typeofday (weekday or weekend as a factor variable)
+* datetime (POSIXct that converts the numeric interval to an actual date/time object so the times can display appropriately on the charts)  
 
 
 
@@ -35,7 +39,16 @@ The activity data consists of 17,568 observations over the following 3 features:
                 library(ggplot2)
                 require(ggplot2)
         }
-        
+
+
+        if (!require(scales)) 
+        {
+                install.packages("scales")
+                library(scales)
+                require(scales)
+        }
+
+
         #load the tidyr package for doing some cleaning of data
         if (!require(tidyr)) 
         {
@@ -63,6 +76,11 @@ The activity data consists of 17,568 observations over the following 3 features:
 
         #convert typeofday to a factor variable
         data$typeofday <-as.factor(data$typeofday)
+
+        #adding a feature to convert the interval feature to an actual date/time POSIXct date object
+        #to make the charts display easier.
+        data$datetime <- as.POSIXct(strptime(formatC(data$interval, width = 4, format = "d", flag = "0"), "%H%M"))
+
 
 ```
 
@@ -95,18 +113,26 @@ The activity data consists of 17,568 observations over the following 3 features:
         #average number of steps taken, averaged across all days (y-axis)
 
         interval.based.summary <- data[complete.cases(data),]%>%
-                group_by(interval)%>% 
+                group_by(datetime)%>% 
                         summarise(meansteps=mean(steps))
 
-        plot(interval.based.summary$interval, interval.based.summary$meansteps, type = "l", 
-        main = "Average Steps per Time Period", xlab = "Time Period", ylab = "Average Steps")
+        p <- ggplot(interval.based.summary, aes(x=datetime, y=meansteps))
+        p <- p + geom_line(color="firebrick")
+        p <- p + labs (title="Average Steps Per Day")
+        p <- p + labs (x="Time")
+        p <- p + labs (y="Average Steps")
+        
+        #using the scale_x_datetime function from the scale package to reformat
+        #the display of x to only show the time
+        p <- p + scale_x_datetime(labels = date_format("%H:%M"))
+
+        print (p)
 
 
         # Which 5-minute interval, on average across all the days in the dataset, contains the                
         #maximum number of steps?
-
-        most.active.time <- as.character(subset(interval.based.summary, meansteps==max(meansteps), 
-        select=c("interval")))
+        most.active.time <- as.character(format(subset(interval.based.summary, meansteps==max(meansteps), 
+        select=c("datetime")), format="%H:%M"))
 
 ```
 
@@ -143,7 +169,7 @@ nadata <- data[!complete.cases(data),]
 completedata <- data[complete.cases(data),]
 
 #join the nadata to the interval based dataset so we can fill in the blanks
-nadata <- merge (nadata, interval.based.summary, by.x="interval", by.y="interval", all.x=FALSE, all.y=FALSE)
+nadata <- merge (nadata, interval.based.summary, by.x="datetime", by.y="datetime", all.x=FALSE, all.y=FALSE)
 
 #use mutate to update the steps feature (with NA's) with the meansteps from the interval set
 nadata <- mutate(nadata, steps = round(meansteps, digits=0))
@@ -175,24 +201,25 @@ mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=
 ## Weekday vs Weekend Activity Patterns  
 
 ```{r}
-       #group by interval and type of day for summarization at that level
-        by_interval_and_type <- group_by (newdata, 
-                                         combo = paste(interval, typeofday, sep= "~"))
+      
+        #group by interval and type of day for summarization of steps at that level        
+        by_interval_and_type <- newdata%>%
+                                        group_by(combo = paste(datetime, typeofday, sep= "~"))%>%
+                                               summarize(mean(steps)) 
         
-        #calculate the mean by interval and type
-        weekday.vs.weekend.summary <- summarize(by_interval_and_type, mean(steps))
+        colnames(by_interval_and_type)[2] <- "steps"
+     
       
         #call the separate function to create a "year" column and "typeofday" column
-        weekday.vs.weekend.summary <- separate(data=weekday.vs.weekend.summary, 
-                                               col=combo, into=c("interval", "typeofday"), 
+        weekday.vs.weekend.summary <- separate(data=by_interval_and_type, 
+                                               col=combo, into=c("datetime", "typeofday"), 
                                                sep= "~")
 
+        #reset datatypes 
         weekday.vs.weekend.summary$typeofday <- as.factor(weekday.vs.weekend.summary$typeofday)
+        weekday.vs.weekend.summary$datetime <- as.POSIXct(weekday.vs.weekend.summary$datetime)
 
         colnames(weekday.vs.weekend.summary)[3] <- "meansteps"
-        
-        weekday.vs.weekend.summary$interval <- as.numeric(weekday.vs.weekend.summary$interval)
-
 
         weekdaymean <- round(mean(subset(weekday.vs.weekend.summary, 
                                    typeofday=="Weekday", 
@@ -202,42 +229,23 @@ mediansteps <- as.character(round(median(date.based.summary$totalsteps), digits=
                                    typeofday=="Weekend", 
                                    select=c("meansteps"))$meansteps), digits=0)
 
-        #this next piece is not required per the instructions but i wanted to show
-        #some different annotation on the plots by facet to include the average
-        #steps by time period for each facet.
-        #i had to create a little data frame with the x & y co-ords for each plot.
-        #in order to get ggplot to understand which facet to put the text on,
-        #i needed to include the typeofday feature which is what is used for the facet
-        # thanks to TRinkers R blog for pointing me in the right direction because it had 
-        #me stumped.  
-        #https://trinkerrstuff.wordpress.com/2012/09/01/add-text-annotations-to-ggplot2-faceted-plot/
-        
-        annotation.text.info <- data.frame(x=c(180,180), y=c(weekdaymean+8, weekendmean+8), 
-                        label=c(paste("Mean Per Period:", weekdaymean),
-                                paste("Mean Per Period:",weekendmean)), 
-                                typeofday=c("Weekday","Weekend"))
 
-     
-   
-        p <- ggplot(weekday.vs.weekend.summary, aes(x=interval, y=meansteps))
+        p <- ggplot(weekday.vs.weekend.summary, aes(x=datetime, y=meansteps))
         p <- p + geom_line(color="firebrick")
         p <- p + labs (title="Weekday vs Weekend Activity Comparison")
-        p <- p + labs (x="Time Interval")
+        p <- p + labs (x="Time")
         p <- p + labs (y="Average Steps")
         p <- p + facet_wrap(~typeofday, ncol=1)
-        p <- p + geom_line(stat = "hline", yintercept = "mean", color='blue', linetype=2)
-        p <- p + geom_text(aes(x, y, label=label, group=NULL), data=annotation.text.info, 
-                           color = "grey50", size=4) 
+        #using the scale_x_datetime function from the scale package to reformat
+        #the display of x to only show the time
+        p <- p + scale_x_datetime(labels = date_format("%H:%M"))
 
         print (p)
 
-
+        
 
 ```
 
-* The average number of steps taken per 5 minute time period during the week were `r weekdaymean` and the average number of steps taken per 5 minute time period on the weekend were `r weekendmean`
+* The average number of steps taken per 5 minute time period during the week were **`r weekdaymean`** and the average number of steps taken per 5 minute time period on the weekend were **`r weekendmean`**
 * The weekday pattern exhibits a big spike early in the morning (could be walking to work or gym) and then very moderate activity during the day.
 * The weekend pattern also exhibits a bigger spike early in the morning but then a much higher rate of activity on average compared to the weekday activity.  
-
-
-- Thanks to [TRinkers R blog](https://trinkerrstuff.wordpress.com/2012/09/01/add-text-annotations-to-ggplot2-faceted-plot/) for providing the guidance I needed to figure out how to put different text annotations on different locations when doing faceted plots.
